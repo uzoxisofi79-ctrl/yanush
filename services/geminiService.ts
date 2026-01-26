@@ -1,161 +1,252 @@
+// services/geminiService.ts
+import { Message, MessageRole, AnalysisResult } from "../types";
 
-import { GoogleGenAI, Type } from "@google/genai";
-import { Message, MessageRole, GlobalSettings, AnalysisResult, TeacherProfile } from "../types";
-import { DEFAULT_SETTINGS } from "../constants";
-
-const getSettings = (): GlobalSettings => {
-  const stored = localStorage.getItem('global_settings');
-  return stored ? JSON.parse(stored) : DEFAULT_SETTINGS;
+type GeminiChatResponse = {
+  text: string;
+  thought: string;
+  trust: number;
+  stress: number;
+  game_over?: boolean;
+  violation_reason?: string;
 };
 
-export const sendMessageToGemini = async (
-  history: Message[], 
-  systemPrompt: string, 
-  lastUserMessage: string
-): Promise<{ text: string, thought: string, trust: number, stress: number, world_event: string | null, conflict_resolved: boolean, game_over?: boolean, violation_reason?: string }> => {
-  const settings = getSettings();
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  
-  const contents = history.filter(m => m.role !== MessageRole.SYSTEM).map(msg => ({
-    role: msg.role === MessageRole.USER ? "user" : "model",
-    parts: [{
-      text: msg.role === MessageRole.USER ? msg.content : JSON.stringify({
-        thought: msg.state?.thought,
-        verbal_response: msg.content,
-        trust: msg.state?.trust,
-        stress: msg.state?.stress
-      })
-    }]
-  }));
-  contents.push({ role: "user", parts: [{ text: lastUserMessage }] });
+function clamp(n: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, n));
+}
 
-  const strictLocalizationInstruction = `
-    [ЯЗЫКОВОЙ КОНТРОЛЬ: СТРОГО КИРИЛЛИЦА]
-    - ЗАПРЕЩЕНО ИСПОЛЬЗОВАТЬ ЛАТИНСКИЕ СИМВОЛЫ И АББРЕВИАТУРЫ (Cv, Ref, Character, v., etc.).
-    - ВСЕ ПОЛЯ ДОЛЖНЫ БЫТЬ ЗАПОЛНЕНЫ НА ЧИСТОМ РУССКОМ ЯЗЫКЕ.
-    - ЕСЛИ В КОНТЕКСТЕ ЕСТЬ АНГЛИЙСКИЕ ИМЕНА — ЗАМЕНИ ИХ НА РУССКИЕ ЭКВИВАЛЕНТЫ.
-  `;
+function extractGeminiText(data: any): string {
+  const parts = data?.candidates?.[0]?.content?.parts;
+  if (!Array.isArray(parts)) return "";
+  return parts
+    .map((p: any) => (typeof p?.text === "string" ? p.text : ""))
+    .filter(Boolean)
+    .join("");
+}
+
+async function postViaProxy(modelAction: string, body: any, timeoutMs = 60_000): Promise<any> {
+  const controller = new AbortController();
+  const t = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents,
-      config: {
-        systemInstruction: systemPrompt + "\n" + strictLocalizationInstruction,
-        temperature: settings.chat_temperature,
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            thought: { type: Type.STRING },
-            verbal_response: { type: Type.STRING },
-            trust: { type: Type.NUMBER },
-            stress: { type: Type.NUMBER },
-            world_event: { type: Type.STRING },
-            conflict_resolved: { type: Type.BOOLEAN },
-            game_over: { type: Type.BOOLEAN },
-            violation_reason: { type: Type.STRING }
-          },
-          required: ["thought", "verbal_response", "trust", "stress"]
-        }
-      }
+    const r = await fetch(`/api/proxy?url=${encodeURIComponent(modelAction)}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal: controller.signal,
     });
 
-    const json = JSON.parse(response.text || "{}");
-    return {
-      text: json.verbal_response || "...", 
-      thought: json.thought || "Без мыслей.",
-      trust: typeof json.trust === 'number' ? json.trust : 50,
-      stress: typeof json.stress === 'number' ? json.stress : 50,
-      world_event: json.world_event || null,
-      conflict_resolved: !!json.conflict_resolved,
-      game_over: !!json.game_over,
-      violation_reason: json.violation_reason
-    };
-  } catch (error) {
-    return { text: `(...Связь прервана...)`, thought: "Критический сбой API.", trust: 50, stress: 50, world_event: null, conflict_resolved: false };
-  }
-};
+    const data = await r.json().catch(() => ({}));
 
-export const analyzeChatSession = async (
-  history: Message[], 
-  scenarioName: string,
-  endReason: string
-): Promise<AnalysisResult> => {
-  const settings = getSettings();
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  const transcript = history.filter(m => m.role !== MessageRole.SYSTEM).map(m => `${m.role === MessageRole.USER ? 'УЧИТЕЛЬ' : 'УЧЕНИК'}: ${m.content}`).join('\n');
-  
-  const prompt = `Проведи педагогический и идеологический анализ сеанса. 
-    Акцентуация ученика: ${scenarioName}. 
-    Причина конца: ${endReason}.
-    
-    [ЯЗЫКОВОЙ КОНТРОЛЬ: СТРОГО КИРИЛЛИЦА]
-    - ЗАПРЕЩЕНО ИСПОЛЬЗОВАТЬ ЛАТИНСКИЕ СИМВОЛЫ (Cv, Ref, Character, и т.д.).
-    - ВСЕ ВЕРДИКТЫ ДОЛЖНЫ БЫТЬ НА РУССКОМ ЯЗЫКЕ.
-    
-    Транскрипт диалога:
-    ${transcript}
-    
-    Выдай JSON: overall_score (0-100), summary, commission (массив {role, name, verdict, score}).`;
+    if (!r.ok) {
+      const msg = data?.error || `Proxy request failed (${r.status})`;
+      throw new Error(msg);
+    }
+
+    return data;
+  } finally {
+    clearTimeout(t);
+  }
+}
+
+function buildContentsFromMessages(messages: Message[]) {
+  // В Gemini API роли: user | model. SYSTEM мы не прокидываем как отдельную роль,
+  // потому что в твоём проекте системный контекст уже есть в constructedPrompt.
+  return messages
+    .filter((m) => m.role === MessageRole.USER || m.role === MessageRole.MODEL)
+    .map((m) => ({
+      role: m.role === MessageRole.USER ? "user" : "model",
+      parts: [{ text: m.content }],
+    }));
+}
+
+/**
+ * Главный запрос чата (то, что дергает ChatInterface).
+ * Важно: возвращает объект {text, thought, trust, stress, game_over, violation_reason}.
+ */
+export async function sendMessageToGemini(
+  messages: Message[],
+  constructedPrompt: string,
+  _userText: string
+): Promise<GeminiChatResponse> {
+  const instruction = `
+ТЫ — симулятор студента. Отвечай ТОЛЬКО СТРОГИМ JSON (без \`\`\`).
+Схема ответа:
+{
+  "text": "реплика студента",
+  "thought": "внутренний ход мысли (для админа)",
+  "trust": число 0..100,
+  "stress": число 0..100,
+  "game_over": true/false,
+  "violation_reason": "если game_over=true — кратко почему"
+}
+Никакого текста вне JSON.
+`;
+
+  const contents = [
+    {
+      role: "user",
+      parts: [{ text: `${constructedPrompt}\n\n${instruction}` }],
+    },
+    ...buildContentsFromMessages(messages),
+  ];
+
+  const body = {
+    contents,
+    generationConfig: {
+      temperature: 0.7,
+    },
+  };
+
+  // Быстро и стабильно для диалога:
+  const data = await postViaProxy("gemini-2.0-flash-lite:generateContent", body, 60_000);
+  const modelText = extractGeminiText(data);
+
+  // Пытаемся распарсить JSON-ответ
+  try {
+    const parsed = JSON.parse(modelText);
+
+    const trust = clamp(Number(parsed?.trust ?? 0), 0, 100);
+    const stress = clamp(Number(parsed?.stress ?? 0), 0, 100);
+
+    return {
+      text: String(parsed?.text ?? ""),
+      thought: String(parsed?.thought ?? ""),
+      trust,
+      stress,
+      game_over: Boolean(parsed?.game_over ?? false),
+      violation_reason: parsed?.violation_reason ? String(parsed.violation_reason) : "",
+    };
+  } catch {
+    // Фолбэк: чтобы UI не ломался даже если модель нарушила формат
+    return {
+      text: modelText || "Пустой ответ модели.",
+      thought: "",
+      trust: 0,
+      stress: 0,
+      game_over: false,
+      violation_reason: "",
+    };
+  }
+}
+
+/**
+ * Генерация "вердикта комиссии" (то, что показывается после окончания/стопа).
+ * ChatInterface использует: analysis.overall_score, analysis.summary, analysis.commission[].
+ */
+export async function analyzeChatSession(
+  messages: Message[],
+  accentuation: string,
+  reason: string
+): Promise<AnalysisResult> {
+  const transcript = messages
+    .filter((m) => m.role === MessageRole.USER || m.role === MessageRole.MODEL)
+    .map((m) => `${m.role === MessageRole.USER ? "ПЕДАГОГ" : "СТУДЕНТ"}: ${m.content}`)
+    .join("\n");
+
+  const instruction = `
+Ты — комиссия по оценке педагогического диалога.
+Акцентуация/профиль: ${accentuation}
+Причина завершения: ${reason}
+
+Ответь ТОЛЬКО СТРОГИМ JSON (без \`\`\`), минимум поля:
+{
+  "overall_score": число 0..100,
+  "summary": "1-2 предложения итог",
+  "commission": [
+    { "name": "…", "role": "…", "score": число 0..100, "verdict": "кратко" }
+  ]
+}
+Никакого текста вне JSON.
+`;
+
+  const body = {
+    contents: [
+      {
+        role: "user",
+        parts: [{ text: `${instruction}\n\nСТЕНОГРАММА:\n${transcript}` }],
+      },
+    ],
+    generationConfig: {
+      temperature: 0.4,
+    },
+  };
+
+  // Для анализа можно и flash; если захочешь “глубже”, поменяй на gemini-1.5-pro
+  const data = await postViaProxy("gemini-2.0-flash-lite:generateContent", body, 90_000);
+  const modelText = extractGeminiText(data);
 
   try {
-    const response = await ai.models.generateContent({
-      model: "gemini-3-pro-preview",
-      contents: prompt,
-      config: {
-        temperature: settings.analysis_temperature,
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            overall_score: { type: Type.NUMBER },
-            summary: { type: Type.STRING },
-            commission: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  role: { type: Type.STRING },
-                  name: { type: Type.STRING },
-                  verdict: { type: Type.STRING },
-                  score: { type: Type.NUMBER }
-                },
-                required: ["role", "name", "verdict", "score"]
-              }
-            }
-          },
-          required: ["overall_score", "summary", "commission"]
-        }
-      }
-    });
-    const json = JSON.parse(response.text || "{}");
+    const parsed = JSON.parse(modelText);
+
+    // Нормализуем к ожидаемой форме
+    const overall_score = clamp(Number(parsed?.overall_score ?? 0), 0, 100);
+    const summary = String(parsed?.summary ?? "");
+
+    const commissionRaw = Array.isArray(parsed?.commission) ? parsed.commission : [];
+    const commission = commissionRaw.map((m: any) => ({
+      name: String(m?.name ?? "Член комиссии"),
+      role: String(m?.role ?? "Эксперт"),
+      score: clamp(Number(m?.score ?? 0), 0, 100),
+      verdict: String(m?.verdict ?? ""),
+    }));
+
+    // Если твой AnalysisResult содержит доп.поля — они сохранятся через spread.
     return {
-        overall_score: json.overall_score || 0,
-        summary: json.summary || "Анализ завершен.",
-        commission: json.commission || [],
-        timestamp: Date.now()
+      ...(parsed as AnalysisResult),
+      overall_score,
+      summary,
+      commission,
     };
-  } catch (error) {
-    return { overall_score: 0, summary: "Ошибка анализа", commission: [], timestamp: Date.now() };
+  } catch {
+    // Фолбэк, чтобы экран не падал
+    return {
+      overall_score: 0,
+      summary: "Не удалось распарсить JSON-ответ анализа.",
+      commission: [
+        { name: "Система", role: "Ошибка", score: 0, verdict: modelText || "Пустой ответ." },
+      ],
+    } as unknown as AnalysisResult;
   }
-};
+}
 
-export const generateGhostResponse = async (history: Message[], scenarioContext: string, teacher: TeacherProfile): Promise<string> => {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    const transcript = history.filter(m => m.role !== MessageRole.SYSTEM).slice(-6).map(m => `${m.role === MessageRole.USER ? 'УЧИТЕЛЬ' : 'УЧЕНИК'}: ${m.content}`).join('\n');
-    const prompt = `Ситуация: ${scenarioContext}\n\nДиалог:\n${transcript}\n\nНапиши идеальную реплику от лица учителя. Строго на русском. Без латиницы.`;
+/**
+ * "Суфлёр" — подсказка педагогу (кнопка Zap).
+ * Возвращает одну короткую рекомендацию.
+ */
+export async function generateGhostResponse(
+  messages: Message[],
+  contextSummary: string,
+  teacher: any
+): Promise<string> {
+  const lastTurns = messages
+    .filter((m) => m.role === MessageRole.USER || m.role === MessageRole.MODEL)
+    .slice(-10)
+    .map((m) => `${m.role === MessageRole.USER ? "ПЕДАГОГ" : "СТУДЕНТ"}: ${m.content}`)
+    .join("\n");
 
-    try {
-        const response = await ai.models.generateContent({
-            model: "gemini-3-flash-preview",
-            contents: prompt,
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: { type: Type.OBJECT, properties: { advice: { type: Type.STRING } }, required: ["advice"] }
-            }
-        });
-        const json = JSON.parse(response.text || "{}");
-        return json.advice || "*задумался*";
-    } catch { return "*совет недоступен*"; }
-};
+  const instruction = `
+Ты — суфлёр педагога. Дай ОДНУ короткую реплику/подсказку (1–2 предложения),
+которая улучшит контакт, снизит стресс студента и повысит доверие.
+Не упоминай, что ты ИИ. Без JSON. Только текст подсказки.
+
+Контекст (кратко): ${contextSummary}
+Педагог: ${teacher?.name ? String(teacher.name) : "не указан"}
+`;
+
+  const body = {
+    contents: [
+      {
+        role: "user",
+        parts: [{ text: `${instruction}\n\nПОСЛЕДНИЕ РЕПЛИКИ:\n${lastTurns}` }],
+      },
+    ],
+    generationConfig: {
+      temperature: 0.8,
+    },
+  };
+
+  const data = await postViaProxy("gemini-2.0-flash-lite:generateContent", body, 45_000);
+  const modelText = extractGeminiText(data);
+
+  return (modelText || "").trim() || "Сформулируйте короткий вопрос и уточните, что именно сейчас сложнее всего.";
+}
