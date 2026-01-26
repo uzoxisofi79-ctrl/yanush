@@ -1,0 +1,133 @@
+
+import { TeacherProfile, StudentProfile, Accentuation, ContextModule, ActiveSession } from '../types';
+import { DEFAULT_ACCENTUATIONS, DEFAULT_CONTEXT_MODULES } from '../constants';
+import { ACCESS_LIMITS } from './authService';
+
+const AVATAR_DB = {
+    male: {
+        neutral: ["1503443207934-14cc8059e28b", "1485230405346-71acb9518d9c", "1542596594-649edbc13630"],
+        dark: ["1519766304828-9a5d0a90af17", "1602341612423-3b691d575225", "1508341591423-4347099e1f19"],
+        bright: ["1519345182560-3f2917c472ef", "1480455624313-e29b44bbfde1", "1513956589380-bad6acb9b9d4"],
+        tough: ["1528815197793-2412803c7344", "1513258509042-88748d3db392", "1463453091185-61582044d556"]
+    },
+    female: {
+        neutral: ["1517841905240-472988babdf9", "1529626455594-4ff0802cfb7e", "1438761681033-6461ffad8d80"],
+        dark: ["1555437877-66a7b686377e", "1534528741775-53994a69daeb", "1506794778202-cad84cf45f1d"],
+        bright: ["1524504388940-b1c1722653e1", "1516575334481-f85287c2c81d", "1494790108377-be9c29b29330"],
+        tough: ["1541260894-3b2e53a554a9", "1515159550328-86ee283eb971", "1520184422263-d7a8d052a23e"]
+    }
+};
+
+/**
+ * Склонение имен для родительного падежа (кого? чего?)
+ */
+const declineNameGenitive = (name: string, gender: 'male' | 'female'): string => {
+    if (gender === 'male') {
+        if (name === 'Дмитрий') return 'Дмитрия';
+        if (name === 'Матвей') return 'Матвея';
+        if (name === 'Илья') return 'Ильи';
+        if (name === 'Никита') return 'Никиты';
+        // Если заканчивается на согласную (кроме й)
+        const vowels = ['а', 'е', 'ё', 'и', 'о', 'у', 'ы', 'э', 'ю', 'я', 'й'];
+        if (!vowels.includes(name.slice(-1))) {
+            return name + 'а';
+        }
+    } else {
+        if (name.endsWith('ия')) return name.slice(0, -2) + 'ии';
+        if (name.endsWith('я')) return name.slice(0, -1) + 'и';
+        if (name.endsWith('а')) {
+            // Вероника -> Вероники, Ольга -> Ольги
+            const preLast = name.slice(-2, -1);
+            if (['г', 'к', 'х', 'ж', 'ч', 'ш', 'щ'].includes(preLast)) return name.slice(0, -1) + 'и';
+            return name.slice(0, -1) + 'ы';
+        }
+    }
+    return name;
+};
+
+export const resolveGenderTokens = (text: string, student: StudentProfile): string => {
+    let resolved = text;
+    
+    // 1. Имена (сначала родительный, потом обычный)
+    resolved = resolved.replace(/{name_gen}/g, declineNameGenitive(student.name, student.gender));
+    resolved = resolved.replace(/{name}/g, student.name);
+
+    // 2. Сложные токены {муж|жен} или {муж|жен|множ}
+    const genderRegex = /\{([^{}|]*)\|([^{}|]*)\}/g;
+    while (genderRegex.test(resolved)) {
+        resolved = resolved.replace(genderRegex, (_, m, f) => {
+            return student.gender === 'male' ? m : f;
+        });
+    }
+
+    return resolved;
+};
+
+const getStudentAvatar = (gender: 'male' | 'female', accentId: string): string => {
+    let vibe: 'neutral' | 'dark' | 'bright' | 'tough' = 'neutral';
+    if (['acc_hyperthymic', 'acc_hysteroid'].includes(accentId)) vibe = 'bright';
+    else if (['acc_schizoid', 'acc_cycloid', 'acc_sensitive'].includes(accentId)) vibe = 'dark';
+    else if (['acc_epileptoid', 'acc_unstable'].includes(accentId)) vibe = 'tough';
+    const collection = AVATAR_DB[gender][vibe];
+    return `https://images.unsplash.com/photo-${collection[Math.floor(Math.random() * collection.length)]}?w=400&h=400&fit=crop&crop=faces&q=80`;
+};
+
+export const generateStudentName = (gender: 'male' | 'female'): string => {
+    const maleNames = ['Максим', 'Артем', 'Иван', 'Даниил', 'Никита', 'Кирилл', 'Егор', 'Дмитрий', 'Александр', 'Матвей', 'Руслан', 'Роман', 'Глеб', 'Илья'];
+    const femaleNames = ['София', 'Анна', 'Мария', 'Виктория', 'Анастасия', 'Полина', 'Алиса', 'Вероника', 'Ксения', 'Екатерина', 'Марина', 'Дарья', 'Елена', 'Ольга'];
+    const list = gender === 'male' ? maleNames : femaleNames;
+    return list[Math.floor(Math.random() * list.length)];
+};
+
+export const buildDynamicPrompt = (teacher: TeacherProfile, student: StudentProfile, isPremium: boolean = false): ActiveSession => {
+  const availableAccs = isPremium ? DEFAULT_ACCENTUATIONS : DEFAULT_ACCENTUATIONS.filter(a => ACCESS_LIMITS.FREE_ACCENTUATIONS.includes(a.id));
+  const randomAcc = availableAccs[Math.floor(Math.random() * availableAccs.length)];
+  const intensity = Math.floor(Math.random() * 3) + 3; 
+  
+  student.avatarUrl = getStudentAvatar(student.gender, randomAcc.id);
+
+  const allIncidents = DEFAULT_CONTEXT_MODULES.filter(m => m.category === 'incident');
+  const allBackgrounds = DEFAULT_CONTEXT_MODULES.filter(m => m.category === 'background');
+
+  const incident = [...allIncidents].sort(() => Math.random() - 0.5)[0];
+  const background = [...allBackgrounds].sort(() => Math.random() - 0.5)[0];
+
+  const chaosPrompt = `
+    [ЯЗЫКОВОЙ ПРОТОКОЛ: СТРОГО КИРИЛЛИЦА, РУССКИЙ ЯЗЫК]
+    [SYSTEM ROLE: GM / NARRATOR / STUDENT]
+    
+    ТЫ — ПОДРОСТОК: ${student.name}, ${student.age} лет.
+    ПСИХОТИП: ${randomAcc.name}. Интенсивность ${intensity}/5.
+    
+    СИТУАЦИЯ: ${incident.prompt_text}
+    КОНТЕКСТ: ${background.prompt_text}
+    СКРЫТАЯ ЦЕЛЬ: ${background.hidden_agenda}
+
+    ИНСТРУКЦИЯ:
+    - НИКАКОГО АНГЛИЙСКОГО (Cv, Ref и т.д. СТРОГО ЗАПРЕЩЕНО).
+    - Реагируй эмоционально, используя подростковый сленг.
+    - В JSONthought пиши свои скрытые мотивы, в verbal_response — слова и действия.
+    
+    УЧИТЕЛЬ: ${teacher.name} (${teacher.gender === 'male' ? 'Мужчина' : 'Женщина'}).
+  `;
+
+  return {
+    teacher,
+    student,
+    constructedPrompt: chaosPrompt,
+    chaosDetails: {
+      accentuation: randomAcc.name,
+      intensity,
+      modules: [incident.name, background.name],
+      starting_trust: incident.initial_trust || 30, 
+      starting_stress: incident.initial_stress || 40,
+      thresholds: {
+        runaway_stress: 95,
+        runaway_trust: 5,
+        shutdown_stress: 90,
+        shutdown_trust: 10
+      },
+      contextSummary: resolveGenderTokens(incident.teacher_briefing, student)
+    }
+  };
+};
