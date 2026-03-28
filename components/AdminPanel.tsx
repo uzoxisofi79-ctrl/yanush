@@ -36,8 +36,8 @@ const AdminPanel: React.FC<Props> = ({ onBack, onRestoreSession }) => {
          <div className="w-full max-w-sm glass p-10 rounded-[50px] text-center space-y-8 border-red-500/30 relative z-10">
             <ShieldAlert size={64} className="mx-auto text-red-500 animate-pulse" />
             <div className="space-y-1">
-                <h2 className="text-2xl font-black text-white uppercase tracking-tighter italic">ДОСТУП ОГРАНИЧЕН</h2>
-                <p className="text-red-500/60 text-[8px] font-black uppercase tracking-[0.4em]">АВТОРИЗАЦИЯ КЕРНЕЛ-БЛОКА</p>
+                <h2 className="text-2xl font-black text-white uppercase tracking-tighter italic">Доступ ограничен</h2>
+                <p className="text-red-500/60 text-[8px] font-black uppercase tracking-[0.4em]">Введите код администратора</p>
             </div>
             <input 
               type="password" 
@@ -47,7 +47,7 @@ const AdminPanel: React.FC<Props> = ({ onBack, onRestoreSession }) => {
               onKeyDown={e => e.key === 'Enter' && verify2FA()}
               className="w-full bg-slate-900 border border-red-500/20 rounded-[28px] p-6 text-4xl text-center font-black text-red-500 outline-none focus:border-red-500/50" 
             />
-            <button onClick={verify2FA} className="w-full py-6 bg-red-600 text-white rounded-[28px] font-black uppercase tracking-[0.4em] text-xs">Авторизовать</button>
+            <button onClick={verify2FA} className="w-full py-6 bg-red-600 text-white rounded-[28px] font-black uppercase tracking-[0.4em] text-xs">Подтвердить</button>
          </div>
       </div>
     );
@@ -59,7 +59,7 @@ const AdminPanel: React.FC<Props> = ({ onBack, onRestoreSession }) => {
             <div className="flex items-center gap-6">
                 <button onClick={onBack} className="p-3 text-slate-500 hover:text-white bg-white/5 rounded-2xl border border-white/5 transition-all"><ArrowLeft size={18} /></button>
                 <div className="font-black text-white uppercase text-xl italic tracking-tighter flex items-center gap-3">
-                    <Terminal size={24} className="text-blue-500" /> Kernel_Root
+                    <Terminal size={24} className="text-blue-500" /> Панель администратора
                 </div>
             </div>
             <div className="flex gap-1 bg-black/40 p-1.5 rounded-2xl border border-white/5">
@@ -69,7 +69,7 @@ const AdminPanel: React.FC<Props> = ({ onBack, onRestoreSession }) => {
                         onClick={() => setActiveTab(t as any)} 
                         className={`uppercase font-black tracking-widest px-4 md:px-6 py-2 md:py-3 rounded-xl transition-all ${activeTab === t ? 'text-white bg-blue-600' : 'text-slate-500'}`}
                     >
-                        {t === 'stats' ? 'СТАТ' : (t === 'database' ? 'БАЗА' : 'АРХИВ')}
+                        {t === 'stats' ? 'Статистика' : (t === 'database' ? 'База данных' : 'Архив сессий')}
                     </button>
                 ))}
             </div>
@@ -79,10 +79,10 @@ const AdminPanel: React.FC<Props> = ({ onBack, onRestoreSession }) => {
             <div className="max-w-7xl mx-auto space-y-16 pb-24">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                     {[
-                        { label: 'Core', val: 'GEMINI_v3', color: 'text-blue-500' },
-                        { label: 'Uplink', val: 'SECURE', color: 'text-emerald-500' },
-                        { label: 'Units', val: modules.length, color: 'text-amber-500' },
-                        { label: 'Access', val: 'ROOT', color: 'text-rose-500' }
+                        { label: 'Модель', val: 'GEMINI_v3', color: 'text-blue-500' },
+                        { label: 'Соединение', val: 'Защищено', color: 'text-emerald-500' },
+                        { label: 'Модули', val: modules.length, color: 'text-amber-500' },
+                        { label: 'Доступ', val: 'Администратор', color: 'text-rose-500' }
                     ].map((s, i) => (
                         <div key={i} className="glass p-6 md:p-8 rounded-[30px] md:rounded-[40px] border-white/5 bg-slate-900/40">
                             <div className={`text-xl md:text-2xl font-black italic uppercase ${s.color}`}>{s.val}</div>
@@ -95,7 +95,7 @@ const AdminPanel: React.FC<Props> = ({ onBack, onRestoreSession }) => {
                     <div className="space-y-20 animate-in fade-in duration-500">
                         <section className="space-y-8">
                             <div className="flex items-center gap-4 text-blue-500 uppercase font-black tracking-[0.3em] border-l-4 border-blue-500 pl-4">
-                                <Layers size={20} /> МАТРИЦА ЛИЧКО
+                                <Layers size={20} /> Матрица акцентуаций по Личко
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {DEFAULT_ACCENTUATIONS.map(acc => (
@@ -111,7 +111,7 @@ const AdminPanel: React.FC<Props> = ({ onBack, onRestoreSession }) => {
 
                         <section className="space-y-8">
                             <div className="flex items-center gap-4 text-rose-500 uppercase font-black tracking-[0.3em] border-l-4 border-rose-500 pl-4">
-                                <AlertTriangle size={20} /> МОДУЛИ ИНЦИДЕНТОВ
+                                <AlertTriangle size={20} /> Модули инцидентов
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {modules.filter(m => m.category === 'incident').map(mod => (
@@ -133,10 +133,10 @@ const AdminPanel: React.FC<Props> = ({ onBack, onRestoreSession }) => {
                 {activeTab === 'logs' && (
                     <div className="space-y-6">
                         <div className="flex items-center gap-4 text-rose-500 uppercase font-black tracking-[0.3em] border-l-4 border-rose-500 pl-4 mb-8">
-                            АРХИВ СЕАНСОВ
+                            Архив сессий
                         </div>
                         {history.length === 0 ? (
-                            <div className="glass py-24 rounded-[40px] text-center text-slate-600 font-black uppercase tracking-widest italic border-white/5 bg-slate-900/20">АРХИВ ПУСТ</div>
+                            <div className="glass py-24 rounded-[40px] text-center text-slate-600 font-black uppercase tracking-widest italic border-white/5 bg-slate-900/20">Архив пуст</div>
                         ) : (
                             <div className="grid grid-cols-1 gap-4">
                                 {history.map((log) => (

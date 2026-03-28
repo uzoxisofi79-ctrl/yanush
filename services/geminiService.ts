@@ -110,7 +110,7 @@ export async function sendMessageToGemini(
   } catch {
     // Фолбэк, чтобы UI не падал
     return {
-      text: modelText || "Пустой ответ модели.",
+      text: modelText || "Пустой ответ.",
       thought: "",
       trust: 0,
       stress: 0,
@@ -185,7 +185,7 @@ export async function analyzeChatSession(
   } catch {
     return {
       overall_score: 0,
-      summary: "Не удалось распарсить JSON-ответ анализа.",
+      summary: "Не удалось обработать ответ комиссии.",
       commission: [{ name: "Система", role: "Ошибка", score: 0, verdict: modelText || "Пустой ответ." }],
     } as unknown as AnalysisResult;
   }
@@ -227,5 +227,5 @@ export async function generateGhostResponse(
   const data = await postViaProxy(body, 45_000);
   const modelText = extractGeminiText(data);
 
-  return (modelText || "").trim() || "Сформулируйте короткий вопрос и уточните, что именно сейчас сложнее всего.";
+  return (modelText || "").trim() || "Задайте уточняющий вопрос — это поможет снизить напряжение и лучше понять ситуацию.";
 }

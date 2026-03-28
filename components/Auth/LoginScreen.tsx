@@ -26,25 +26,25 @@ const LoginScreen: React.FC<Props> = ({ onLogin, onEnterMuseum }) => {
                 const admin = authService.admin_login('admin@kernel.root');
                 onLogin(admin.email, admin.role);
             } else {
-                setError('КЛЮЧ ОТКЛОНЕН');
+                setError('Неверный ключ доступа');
             }
         } else if (mode === 'register') {
-            if (!email.includes('@')) throw new Error('НЕВЕРНЫЙ EMAIL');
-            if (password.length < 6) throw new Error('ПАРОЛЬ ДОЛЖЕН БЫТЬ ОТ 6 СИМВОЛОВ');
+            if (!email.includes('@')) throw new Error('Укажите корректный адрес электронной почты');
+            if (password.length < 6) throw new Error('Пароль должен содержать не менее 6 символов');
             
             const res = await authService.register(email, password);
             if (res.success) {
                 setMode('login');
-                setError('АККАУНТ СОЗДАН. ТЕПЕРЬ ВОЙДИТЕ.');
+                setError('Учётная запись создана. Теперь войдите.');
             } else {
-                setError(res.error || 'ОШИБКА РЕГИСТРАЦИИ');
+                setError(res.error || 'Не удалось зарегистрироваться');
             }
         } else if (mode === 'login') {
             const user = await authService.login(email, password);
             if (user) {
                 onLogin(user.email, user.role);
             } else {
-                setError('НЕВЕРНЫЙ ЛОГИН ИЛИ ПАРОЛЬ');
+                setError('Неверная почта или пароль');
             }
         }
     } catch (err: any) {
@@ -64,6 +64,9 @@ const LoginScreen: React.FC<Props> = ({ onLogin, onEnterMuseum }) => {
                     <Activity size={48} className="animate-pulse" />
                 </div>
                 <h1 className="text-7xl font-black text-white tracking-tighter uppercase italic leading-none">ЯНУШ</h1>
+                <p className="text-sm text-slate-500 max-w-xs mx-auto leading-relaxed">
+                    Тренажёр педагогических диалогов с ИИ-подростком
+                </p>
             </div>
 
             {mode === 'welcome' ? (
@@ -72,11 +75,12 @@ const LoginScreen: React.FC<Props> = ({ onLogin, onEnterMuseum }) => {
                         onClick={onEnterMuseum}
                         className="group w-full glass p-8 rounded-[45px] border-blue-500/20 hover:border-blue-500/50 transition-all hover:scale-[1.02] text-center"
                     >
-                        <div className="text-blue-400 font-black text-[10px] uppercase tracking-[0.5em] mb-4">Свободный Доступ</div>
-                        <h2 className="text-2xl font-black text-white uppercase italic">Выставка акцентуаций</h2>
+                        <div className="text-blue-400 font-black text-[10px] uppercase tracking-[0.5em] mb-4">Без регистрации</div>
+                        <h2 className="text-2xl font-black text-white uppercase italic">Галерея акцентуаций</h2>
+                        <p className="text-xs text-slate-500 mt-2">11 психотипов по Личко — досье, описание, демо-сессии</p>
                         <div className="pt-6 flex justify-center">
                             <span className="px-8 py-4 bg-white text-slate-950 rounded-2xl font-black uppercase text-[10px] flex items-center gap-2">
-                                Открыть Экспозицию <ArrowRight size={14} />
+                                Открыть галерею <ArrowRight size={14} />
                             </span>
                         </div>
                     </button>
@@ -84,16 +88,16 @@ const LoginScreen: React.FC<Props> = ({ onLogin, onEnterMuseum }) => {
                     <div className="grid grid-cols-2 gap-4">
                         <button onClick={() => setMode('login')} className="p-6 glass rounded-[35px] border-white/5 hover:border-white/20 flex flex-col items-center gap-3 transition-all">
                             <LogIn className="text-slate-500" size={24} />
-                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Вход</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Войти</span>
                         </button>
                         <button onClick={() => setMode('register')} className="p-6 glass rounded-[35px] border-white/5 hover:border-white/20 flex flex-col items-center gap-3 transition-all">
                             <UserPlus className="text-slate-500" size={24} />
-                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Регистрация</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Создать аккаунт</span>
                         </button>
                     </div>
 
                     <div className="flex justify-center">
-                        <button onClick={() => setMode('admin')} className="p-4 bg-white/5 rounded-full text-slate-700 hover:text-red-500 transition-all">
+                        <button onClick={() => setMode('admin')} className="p-4 bg-white/5 rounded-full text-slate-700 hover:text-red-500 transition-all" title="Панель администратора">
                             <Fingerprint size={28} />
                         </button>
                     </div>
@@ -105,7 +109,7 @@ const LoginScreen: React.FC<Props> = ({ onLogin, onEnterMuseum }) => {
                 >
                     <div className="text-center space-y-2 mb-4">
                         <h3 className="text-white font-black uppercase tracking-widest text-sm italic">
-                            {mode === 'admin' ? 'Ядро Системы' : (mode === 'login' ? 'Авторизация' : 'Регистрация')}
+                            {mode === 'admin' ? 'Администрирование' : (mode === 'login' ? 'Вход в систему' : 'Создание аккаунта')}
                         </h3>
                         {error && <p className="text-[9px] text-rose-500 font-black uppercase tracking-widest">{error}</p>}
                     </div>
@@ -117,7 +121,7 @@ const LoginScreen: React.FC<Props> = ({ onLogin, onEnterMuseum }) => {
                                 <input 
                                     required
                                     type="email"
-                                    placeholder="EMAIL"
+                                    placeholder="Электронная почта"
                                     value={email}
                                     onChange={e => setEmail(e.target.value)}
                                     className="w-full bg-slate-900/80 border border-white/5 rounded-2xl p-5 pl-16 text-white outline-none focus:border-blue-500/50"
@@ -129,7 +133,7 @@ const LoginScreen: React.FC<Props> = ({ onLogin, onEnterMuseum }) => {
                             <input 
                                 required
                                 type="password"
-                                placeholder="ПАРОЛЬ"
+                                placeholder={mode === 'admin' ? 'Ключ доступа' : 'Пароль'}
                                 value={password}
                                 onChange={e => setPassword(e.target.value)}
                                 className="w-full bg-slate-900/80 border border-white/5 rounded-2xl p-5 pl-16 text-white outline-none focus:border-blue-500/50"
@@ -142,7 +146,7 @@ const LoginScreen: React.FC<Props> = ({ onLogin, onEnterMuseum }) => {
                         type="submit"
                         className={`w-full py-6 rounded-3xl font-black text-xs uppercase tracking-[0.4em] shadow-xl flex items-center justify-center gap-3 transition-all ${mode === 'admin' ? 'bg-red-600 hover:bg-red-500' : 'bg-blue-600 hover:bg-blue-500'} text-white`}
                     >
-                        {isProcessing ? <Loader2 className="animate-spin" size={18} /> : (mode === 'admin' ? 'Войти' : (mode === 'login' ? 'Войти' : 'Создать'))}
+                        {isProcessing ? <Loader2 className="animate-spin" size={18} /> : (mode === 'admin' ? 'Подтвердить' : (mode === 'login' ? 'Войти' : 'Зарегистрироваться'))}
                     </button>
 
                     <button 

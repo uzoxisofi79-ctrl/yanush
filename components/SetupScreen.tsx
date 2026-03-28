@@ -18,6 +18,9 @@ const SetupScreen: React.FC<Props> = ({ onStart, onOpenAdmin, onBack }) => {
   const [studentGender, setStudentGender] = useState<'male' | 'female'>('male');
   const [showPayment, setShowPayment] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'annual'>('monthly');
+  const [promoCode, setPromoCode] = useState('');
+  const [promoApplied, setPromoApplied] = useState(false);
 
   const isPremium = authService.isPremium();
   const isAdmin = authService.isAdmin();
@@ -33,16 +36,25 @@ const SetupScreen: React.FC<Props> = ({ onStart, onOpenAdmin, onBack }) => {
   const processPayment = async () => {
       setIsProcessingPayment(true);
       
-      // Логика перехода на реальную оплату
-      // В будущем: window.location.href = `${COMMERCIAL_CONFIG.PAYMENT_PROVIDER_URL}?user=${authService.getCurrentUser()?.id}`;
-      
       await new Promise(r => setTimeout(r, 2000));
       
-      await authService.upgradeToPremium(COMMERCIAL_CONFIG.SUBSCRIPTION_DAYS);
+      const days = selectedPlan === 'annual' ? 365 : COMMERCIAL_CONFIG.SUBSCRIPTION_DAYS;
+      await authService.upgradeToPremium(days);
       setIsProcessingPayment(false);
       setShowPayment(false);
       window.location.reload(); 
   };
+
+  const applyPromo = () => {
+    if (promoCode.trim().length > 0) {
+      setPromoApplied(true);
+    }
+  };
+
+  const currentPrice = selectedPlan === 'annual' ? COMMERCIAL_CONFIG.ANNUAL_PRICE_RUB : COMMERCIAL_CONFIG.PRICE_RUB;
+  const priceLabel = selectedPlan === 'annual' 
+    ? `${COMMERCIAL_CONFIG.ANNUAL_PRICE_RUB} ₽/год (${COMMERCIAL_CONFIG.ANNUAL_MONTHLY_PRICE_RUB} ₽/мес)` 
+    : `${COMMERCIAL_CONFIG.PRICE_RUB} ₽/мес`;
 
   return (
     <div className="h-full bg-slate-950 flex flex-col items-center p-6 overflow-y-auto no-scrollbar relative">
@@ -55,16 +67,16 @@ const SetupScreen: React.FC<Props> = ({ onStart, onOpenAdmin, onBack }) => {
                 <ArrowLeft size={20} />
             </button>
             <div className="text-center">
-                <h1 className="text-3xl font-black text-white uppercase tracking-tighter italic leading-none">ПОДГОТОВКА</h1>
-                <p className="text-blue-500 text-[9px] font-black uppercase tracking-[0.4em]">Параметры Сеанса</p>
+                <h1 className="text-3xl font-black text-white uppercase tracking-tighter italic leading-none">Настройка сессии</h1>
+                <p className="text-blue-500 text-[9px] font-black uppercase tracking-[0.4em]">Параметры диалога</p>
             </div>
             <div className="flex gap-2">
                 {isAdmin && (
-                    <button onClick={onOpenAdmin} className="p-3 bg-white/5 border border-white/10 rounded-2xl text-slate-400 hover:text-blue-500 transition-all">
+                    <button onClick={onOpenAdmin} className="p-3 bg-white/5 border border-white/10 rounded-2xl text-slate-400 hover:text-blue-500 transition-all" title="Панель администратора">
                         <Settings size={20} />
                     </button>
                 )}
-                <button onClick={() => authService.logout()} className="p-3 bg-white/5 border border-white/10 rounded-2xl text-slate-400 hover:text-white transition-all">
+                <button onClick={() => authService.logout()} className="p-3 bg-white/5 border border-white/10 rounded-2xl text-slate-400 hover:text-white transition-all" title="Выйти из системы">
                     <LogOut size={20} />
                 </button>
             </div>
@@ -77,8 +89,8 @@ const SetupScreen: React.FC<Props> = ({ onStart, onOpenAdmin, onBack }) => {
                         <CheckCircle2 size={24} className="text-emerald-500" />
                     </div>
                     <div>
-                        <h4 className="text-white font-black text-[10px] uppercase tracking-[0.2em]">Полный Допуск Активен</h4>
-                        <p className="text-emerald-500/80 text-[9px] font-bold mt-1 tracking-widest uppercase">Все 11 психотипов разблокированы</p>
+                        <h4 className="text-white font-black text-[10px] uppercase tracking-[0.2em]">Премиум-доступ активен</h4>
+                        <p className="text-emerald-500/80 text-[9px] font-bold mt-1 tracking-widest uppercase">Все 11 акцентуаций · все сценарии · полная оценка</p>
                     </div>
                 </div>
             </div>
@@ -89,31 +101,32 @@ const SetupScreen: React.FC<Props> = ({ onStart, onOpenAdmin, onBack }) => {
                         <Activity size={24} className="text-white" />
                     </div>
                     <div>
-                        <h4 className="text-white font-black text-xs uppercase italic tracking-widest">Пробная версия</h4>
-                        <p className="text-blue-100 text-[9px] font-bold opacity-80 mt-1 uppercase">Заблокировано: 9 акцентуаций</p>
+                        <h4 className="text-white font-black text-xs uppercase italic tracking-widest">Базовый тариф</h4>
+                        <p className="text-blue-100 text-[9px] font-bold opacity-80 mt-1 uppercase">2 психотипа из 11 · базовые сценарии</p>
                     </div>
                 </div>
                 <button 
                     onClick={() => setShowPayment(true)}
                     className="w-full py-4 bg-white text-blue-600 rounded-[20px] font-black text-[10px] uppercase tracking-[0.2em] shadow-xl hover:bg-blue-50 transition-all flex items-center justify-center gap-2"
                 >
-                    <Sparkles size={14} /> КУПИТЬ ПОЛНЫЙ ДОСТУП
+                    <Sparkles size={14} /> Перейти на Премиум
                 </button>
             </div>
         )}
 
         <div className="space-y-4">
             <div className="flex items-center gap-3 text-blue-500 text-[10px] font-black uppercase tracking-[0.3em] ml-2">
-                <User size={14} /> Профиль Педагога
+                <User size={14} /> Педагог
             </div>
             <div className="glass p-8 rounded-[40px] space-y-8 border-white/5">
                 <div className="space-y-6">
                     <div>
-                       <label className="block text-[10px] text-slate-500 font-black uppercase mb-3 tracking-widest">Фамилия Имя Отчество</label>
+                       <label className="block text-[10px] text-slate-500 font-black uppercase mb-3 tracking-widest">Как к вам обращаться</label>
                        <input 
                          type="text" 
                          value={teacherName}
                          onChange={e => setTeacherName(e.target.value)}
+                         placeholder="Имя Отчество или ФИО"
                          className="w-full bg-slate-900/80 border border-white/10 rounded-2xl p-5 text-white outline-none focus:border-blue-500/50 font-bold italic"
                        />
                     </div>
@@ -124,7 +137,7 @@ const SetupScreen: React.FC<Props> = ({ onStart, onOpenAdmin, onBack }) => {
                                 onClick={() => setTeacherGender(g as any)}
                                 className={`flex-1 py-5 rounded-[22px] text-[10px] font-black uppercase transition-all border ${teacherGender === g ? 'bg-blue-600 border-blue-400 text-white shadow-xl' : 'bg-white/5 text-slate-500 border-white/5'}`}
                             >
-                                {g === 'male' ? 'МУЖЧИНА' : 'ЖЕНЩИНА'}
+                                {g === 'male' ? 'Мужчина' : 'Женщина'}
                             </button>
                         ))}
                     </div>
@@ -134,7 +147,7 @@ const SetupScreen: React.FC<Props> = ({ onStart, onOpenAdmin, onBack }) => {
 
         <div className="space-y-4">
             <div className="flex items-center gap-3 text-purple-500 text-[10px] font-black uppercase tracking-[0.3em] ml-2">
-                <Target size={14} /> Параметры Ученика
+                <Target size={14} /> Ученик
             </div>
             <div className="glass p-8 rounded-[40px] space-y-10 border-white/5">
                 <div className="space-y-8">
@@ -145,14 +158,14 @@ const SetupScreen: React.FC<Props> = ({ onStart, onOpenAdmin, onBack }) => {
                                 onClick={() => setStudentGender(g as any)}
                                 className={`flex-1 py-5 rounded-[22px] text-[10px] font-black uppercase transition-all border ${studentGender === g ? 'bg-purple-600 border-purple-400 text-white shadow-xl' : 'bg-white/5 text-slate-500 border-white/5'}`}
                             >
-                                {g === 'male' ? 'ЮНОША' : 'ДЕВУШКА'}
+                                {g === 'male' ? 'Юноша' : 'Девушка'}
                             </button>
                         ))}
                     </div>
 
                     <div className="space-y-6">
                         <div className="flex justify-between items-end mb-2">
-                            <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest ml-1">Возраст</label>
+                            <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest ml-1">Возраст ученика</label>
                             <span className="text-3xl font-black text-white italic">{studentAge}</span>
                         </div>
                         <input 
@@ -161,6 +174,7 @@ const SetupScreen: React.FC<Props> = ({ onStart, onOpenAdmin, onBack }) => {
                             onChange={e => setStudentAge(parseInt(e.target.value))}
                             className="w-full h-1.5 bg-slate-900 rounded-full appearance-none accent-purple-500"
                         />
+                        <p className="text-[9px] text-slate-600 italic">Психотип, инцидент и скрытый контекст подбираются случайно</p>
                     </div>
                 </div>
             </div>
@@ -170,14 +184,14 @@ const SetupScreen: React.FC<Props> = ({ onStart, onOpenAdmin, onBack }) => {
             onClick={handleStart}
             className="w-full py-7 bg-white text-slate-950 rounded-[40px] font-black text-xl hover:bg-blue-400 transition-all active:scale-95 shadow-xl flex items-center justify-center gap-4 italic uppercase tracking-widest"
         >
-            НАЧАТЬ СЕАНС <ChevronRight size={28} />
+            Начать сессию <ChevronRight size={28} />
         </button>
 
       </div>
 
       {showPayment && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-950/95 backdrop-blur-xl animate-in fade-in duration-300">
-              <div className="w-full max-w-md glass rounded-[50px] p-10 space-y-8 border-blue-500/30 shadow-2xl relative">
+              <div className="w-full max-w-md glass rounded-[50px] p-10 space-y-8 border-blue-500/30 shadow-2xl relative overflow-y-auto max-h-[90vh]">
                   {!isProcessingPayment && (
                       <button onClick={() => setShowPayment(false)} className="absolute top-8 right-8 text-slate-500 hover:text-white transition-colors"><X size={24}/></button>
                   )}
@@ -185,13 +199,67 @@ const SetupScreen: React.FC<Props> = ({ onStart, onOpenAdmin, onBack }) => {
                       <div className="inline-flex p-4 bg-blue-600/20 rounded-[32px] text-blue-400">
                           <CreditCard size={48} />
                       </div>
-                      <h3 className="text-3xl font-black text-white uppercase italic tracking-tighter">ОПЛАТА ДОСТУПА</h3>
-                      <p className="text-[10px] text-slate-500 uppercase tracking-widest">Переход в защищенный платежный шлюз</p>
+                      <h3 className="text-3xl font-black text-white uppercase italic tracking-tighter">Премиум-доступ</h3>
+                      <p className="text-[10px] text-slate-500 uppercase tracking-widest">Все возможности тренажёра без ограничений</p>
                   </div>
                   
-                  <div className="space-y-4 bg-white/5 p-8 rounded-[40px] border border-white/5 text-center">
-                      <div className="text-white font-black text-4xl mb-2">{COMMERCIAL_CONFIG.PRICE_RUB} ₽</div>
-                      <div className="text-[9px] text-slate-500 uppercase tracking-widest">Единоразовый платеж за {COMMERCIAL_CONFIG.SUBSCRIPTION_DAYS} дней</div>
+                  <div className="space-y-3">
+                    <button 
+                      onClick={() => setSelectedPlan('monthly')}
+                      className={`w-full p-6 rounded-[28px] border text-left transition-all ${selectedPlan === 'monthly' ? 'bg-blue-600/10 border-blue-500/40' : 'bg-white/5 border-white/5 hover:border-white/20'}`}
+                    >
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <div className="text-white font-black text-sm">Ежемесячно</div>
+                          <div className="text-[9px] text-slate-500 uppercase tracking-widest mt-1">Оплата каждый месяц</div>
+                        </div>
+                        <div className="text-white font-black text-2xl">{COMMERCIAL_CONFIG.PRICE_RUB} ₽</div>
+                      </div>
+                    </button>
+                    <button 
+                      onClick={() => setSelectedPlan('annual')}
+                      className={`w-full p-6 rounded-[28px] border text-left transition-all relative ${selectedPlan === 'annual' ? 'bg-blue-600/10 border-blue-500/40' : 'bg-white/5 border-white/5 hover:border-white/20'}`}
+                    >
+                      <div className="absolute -top-2 right-6 px-3 py-1 bg-emerald-500 text-white text-[8px] font-black uppercase rounded-full tracking-widest">−25%</div>
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <div className="text-white font-black text-sm">Годовой</div>
+                          <div className="text-[9px] text-slate-500 uppercase tracking-widest mt-1">{COMMERCIAL_CONFIG.ANNUAL_MONTHLY_PRICE_RUB} ₽/мес при оплате за год</div>
+                        </div>
+                        <div className="text-white font-black text-2xl">{COMMERCIAL_CONFIG.ANNUAL_PRICE_RUB} ₽</div>
+                      </div>
+                    </button>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="text-[9px] text-slate-500 font-black uppercase tracking-widest">Промокод</div>
+                    <div className="flex gap-2">
+                      <input 
+                        type="text"
+                        value={promoCode}
+                        onChange={e => { setPromoCode(e.target.value); setPromoApplied(false); }}
+                        placeholder="Введите промокод"
+                        className="flex-1 bg-slate-900/80 border border-white/10 rounded-2xl p-4 text-white text-sm outline-none focus:border-blue-500/50"
+                      />
+                      <button 
+                        onClick={applyPromo}
+                        className="px-6 py-4 bg-white/10 text-white rounded-2xl font-black text-[10px] uppercase hover:bg-white/20 transition-all"
+                      >
+                        Применить
+                      </button>
+                    </div>
+                    {promoApplied && <p className="text-[9px] text-emerald-500 font-bold">Промокод принят</p>}
+                  </div>
+
+                  <div className="space-y-3 bg-white/5 p-6 rounded-[28px] border border-white/5">
+                    <h4 className="text-white font-black text-[10px] uppercase tracking-widest">Что входит в Премиум</h4>
+                    <ul className="space-y-2 text-[10px] text-slate-400">
+                      <li className="flex items-start gap-2"><CheckCircle2 size={12} className="text-emerald-500 mt-0.5 shrink-0" /> Все 11 акцентуаций по Личко</li>
+                      <li className="flex items-start gap-2"><CheckCircle2 size={12} className="text-emerald-500 mt-0.5 shrink-0" /> Расширенные сценарии и фоновые контексты</li>
+                      <li className="flex items-start gap-2"><CheckCircle2 size={12} className="text-emerald-500 mt-0.5 shrink-0" /> Экспертная комиссия из 8 специалистов</li>
+                      <li className="flex items-start gap-2"><CheckCircle2 size={12} className="text-emerald-500 mt-0.5 shrink-0" /> Совещательная комиссия (общественное давление)</li>
+                      <li className="flex items-start gap-2"><CheckCircle2 size={12} className="text-emerald-500 mt-0.5 shrink-0" /> Полный архив сессий</li>
+                    </ul>
                   </div>
 
                   <button 
@@ -199,12 +267,12 @@ const SetupScreen: React.FC<Props> = ({ onStart, onOpenAdmin, onBack }) => {
                     onClick={processPayment}
                     className="w-full py-6 bg-blue-600 text-white rounded-[28px] font-black uppercase tracking-[0.4em] text-xs shadow-xl flex items-center justify-center gap-3 transition-all active:scale-95"
                   >
-                    {isProcessingPayment ? <Loader2 className="animate-spin" size={20} /> : 'ПЕРЕЙТИ К ОПЛАТЕ'}
+                    {isProcessingPayment ? <Loader2 className="animate-spin" size={20} /> : `Оплатить ${currentPrice} ₽`}
                   </button>
                   
                   <div className="space-y-2">
-                      <p className="text-[7px] text-center text-slate-700 uppercase tracking-[0.2em]">Платежи защищены по стандарту PCI DSS</p>
-                      <p className="text-[7px] text-center text-slate-800 uppercase tracking-[0.1em]">После оплаты вы будете автоматически перенаправлены обратно</p>
+                      <p className="text-[7px] text-center text-slate-700 uppercase tracking-[0.2em]">Платежи обрабатываются по стандарту PCI DSS</p>
+                      <p className="text-[7px] text-center text-slate-800 uppercase tracking-[0.1em]">После оплаты доступ активируется автоматически</p>
                   </div>
               </div>
           </div>

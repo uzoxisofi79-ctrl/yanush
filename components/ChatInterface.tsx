@@ -75,14 +75,14 @@ const ChatInterface: React.FC<Props> = ({ session, isAdmin, onExit, initialMessa
   const handleStop = async (e: React.PointerEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      if (!confirm('ЗАВЕРШИТЬ СЕАНС И ПОЛУЧИТЬ ВЕРДИКТ?')) return;
+      if (!confirm('Завершить сессию и получить оценку комиссии?')) return;
       setIsAnalyzing(true);
       try {
           const result = await analyzeChatSession(messages, session.chaosDetails.accentuation, 'Принудительное завершение');
           setAnalysis(result);
       } catch (e) {
           console.error(e);
-          alert('Сбой генерации анализа. Попробуйте еще раз.');
+          alert('Не удалось сформировать оценку. Попробуйте ещё раз.');
           setIsAnalyzing(false);
       }
   };
@@ -132,15 +132,18 @@ const ChatInterface: React.FC<Props> = ({ session, isAdmin, onExit, initialMessa
                   <div className="max-w-4xl mx-auto space-y-12 pb-32">
                       <div className="glass p-8 md:p-12 rounded-[60px] text-center border-blue-500/20 flex flex-col md:flex-row items-center gap-10 animate-in zoom-in-95 duration-700">
                           <div className="shrink-0">
-                            <div className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-2">РЕЙТИНГ</div>
+                            <div className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-2">Итоговая оценка</div>
                             <div className="text-7xl md:text-9xl font-black text-white italic leading-none">{Math.round(analysis.overall_score)}</div>
                           </div>
                           <div className="text-left space-y-4">
-                            <h2 className="text-3xl md:text-4xl font-black text-white uppercase italic tracking-tighter">ВЕРДИКТ</h2>
-                            <p className="text-slate-400 text-lg leading-relaxed italic border-l-4 border-blue-500 pl-6">"{analysis.summary}"</p>
+                            <h2 className="text-3xl md:text-4xl font-black text-white uppercase italic tracking-tighter">Результаты сессии</h2>
+                            <p className="text-slate-400 text-lg leading-relaxed italic border-l-4 border-blue-500 pl-6">«{analysis.summary}»</p>
                           </div>
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      
+                      <div>
+                        <h3 className="text-[10px] font-black text-blue-500 uppercase tracking-[0.4em] mb-6 ml-2">Экспертная комиссия</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           {analysis.commission.map((member, i) => (
                               <div key={i} className="glass p-8 rounded-[40px] border-white/5 space-y-4">
                                   <div className="flex justify-between items-start">
@@ -150,15 +153,16 @@ const ChatInterface: React.FC<Props> = ({ session, isAdmin, onExit, initialMessa
                                       </div>
                                       <div className="text-3xl font-black text-white italic">{member.score}</div>
                                   </div>
-                                  <p className="text-xs text-slate-300 italic">"{member.verdict}"</p>
+                                  <p className="text-xs text-slate-300 italic">«{member.verdict}»</p>
                               </div>
                           ))}
+                        </div>
                       </div>
                   </div>
               </div>
               <footer className="shrink-0 p-8 glass flex gap-4 print:hidden bg-slate-950/90 backdrop-blur-xl border-t border-white/5">
-                <button onClick={onExit} className="flex-1 py-6 bg-white text-slate-950 rounded-[35px] font-black uppercase tracking-widest text-xs hover:bg-blue-600 hover:text-white transition-all">ЗАКРЫТЬ СЕАНС</button>
-                <button onClick={() => window.print()} className="px-10 py-6 glass text-white rounded-[35px] font-black uppercase text-[10px] flex items-center gap-3">ПЕЧАТЬ</button>
+                <button onClick={onExit} className="flex-1 py-6 bg-white text-slate-950 rounded-[35px] font-black uppercase tracking-widest text-xs hover:bg-blue-600 hover:text-white transition-all">Завершить</button>
+                <button onClick={() => window.print()} className="px-10 py-6 glass text-white rounded-[35px] font-black uppercase text-[10px] flex items-center gap-3">Печать</button>
               </footer>
           </div>
       );
@@ -172,8 +176,8 @@ const ChatInterface: React.FC<Props> = ({ session, isAdmin, onExit, initialMessa
                   <div className="absolute inset-0 bg-blue-500/20 blur-[120px] rounded-full animate-pulse"></div>
                   <Gavel size={80} className="text-blue-500 animate-bounce relative z-10" />
               </div>
-              <h2 className="text-3xl md:text-4xl font-black text-white uppercase italic tracking-tighter mb-4">КОМИССИЯ СОЗВАНА</h2>
-              <p className="text-blue-500 font-black text-[10px] uppercase tracking-[0.4em] mb-12">ФОРМИРОВАНИЕ ПЕДАГОГИЧЕСКОГО ВЕРДИКТА...</p>
+              <h2 className="text-3xl md:text-4xl font-black text-white uppercase italic tracking-tighter mb-4">Комиссия работает</h2>
+              <p className="text-blue-500 font-black text-[10px] uppercase tracking-[0.4em] mb-12">Формируется педагогическая оценка...</p>
               <div className="w-64 h-1 bg-white/10 rounded-full overflow-hidden">
                   <div className="h-full bg-blue-500 animate-[loading_3s_infinite_ease-in-out]"></div>
               </div>
@@ -189,7 +193,7 @@ const ChatInterface: React.FC<Props> = ({ session, isAdmin, onExit, initialMessa
               <div className="hidden sm:block">
                   <h2 className="text-sm md:text-md font-black text-white uppercase tracking-tighter italic leading-none">{session.student.name}</h2>
                   <div className="text-[8px] font-black text-blue-500 uppercase tracking-widest flex items-center gap-1 mt-1">
-                      {isAdmin ? session.chaosDetails.accentuation : 'ОБЪЕКТ СИМУЛЯЦИИ'} <Info size={10} className="opacity-50" />
+                      {isAdmin ? session.chaosDetails.accentuation : 'Собеседник'} <Info size={10} className="opacity-50" />
                   </div>
               </div>
           </div>
@@ -220,7 +224,7 @@ const ChatInterface: React.FC<Props> = ({ session, isAdmin, onExit, initialMessa
                 type="button"
                 onPointerDown={handleStop}
                 className="px-4 md:px-6 py-2.5 md:py-3 bg-rose-600/10 hover:bg-rose-600 text-rose-500 hover:text-white text-[9px] md:text-[10px] font-black uppercase rounded-2xl border border-rose-500/20 transition-all z-[600]"
-              >СТОП</button>
+              >Стоп</button>
           </div>
       </header>
 
@@ -232,7 +236,7 @@ const ChatInterface: React.FC<Props> = ({ session, isAdmin, onExit, initialMessa
                         <div className="w-full glass p-6 md:p-8 rounded-[30px] md:rounded-[40px] border-blue-500/10 mb-4 italic text-slate-400 text-sm leading-relaxed shadow-inner">
                             <div className="flex items-center gap-3 mb-3">
                                 <ShieldAlert size={18} className="text-blue-500" />
-                                <span className="text-[10px] font-black uppercase tracking-widest text-blue-500">ВВОДНАЯ СВОДКА</span>
+                                <span className="text-[10px] font-black uppercase tracking-widest text-blue-500">Вводная для педагога</span>
                             </div>
                             {msg.content}
                         </div>
@@ -240,7 +244,7 @@ const ChatInterface: React.FC<Props> = ({ session, isAdmin, onExit, initialMessa
                         <div className="flex flex-col space-y-2 max-w-[90%] md:max-w-[85%]">
                             {isAdmin && msg.role === MessageRole.MODEL && msg.state?.thought && (
                                 <div className="p-4 bg-amber-500/5 border border-amber-500/10 rounded-[24px] text-[10px] text-amber-500 italic mb-2 font-mono">
-                                    <span className="font-black uppercase text-[8px] block mb-1 opacity-60">Ментальный процесс:</span>
+                                    <span className="font-black uppercase text-[8px] block mb-1 opacity-60">Внутренний монолог:</span>
                                     {msg.state.thought}
                                 </div>
                             )}
@@ -252,14 +256,14 @@ const ChatInterface: React.FC<Props> = ({ session, isAdmin, onExit, initialMessa
                 </div>
             ))}
             {isLoading && <div className="flex items-center gap-3 text-blue-500/40 text-[10px] font-black uppercase tracking-widest ml-4">
-                <Loader2 size={14} className="animate-spin" /> НЕЙРОСВЯЗЬ...
+                <Loader2 size={14} className="animate-spin" /> Ученик думает...
             </div>}
             
             {ghostAdvice && (
                 <div className="p-6 bg-amber-500/10 border border-amber-500/30 rounded-[30px] animate-in slide-in-from-left-4 max-w-[85%]">
                     <div className="flex items-center gap-3 mb-3">
                         <Zap size={16} className="text-amber-500" />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-amber-500">СУФЛЕР</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-amber-500">Подсказка</span>
                     </div>
                     <p className="text-sm text-amber-200 italic font-medium leading-relaxed">"{ghostAdvice}"</p>
                 </div>
@@ -274,7 +278,7 @@ const ChatInterface: React.FC<Props> = ({ session, isAdmin, onExit, initialMessa
                   disabled={isAnalyzing}
                   onChange={e => setInput(e.target.value)} 
                   onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }} 
-                  placeholder={isAnalyzing ? "ФОРМИРОВАНИЕ ВЕРДИКТА..." : "ВВЕДИТЕ РЕПЛИКУ ПЕДАГОГА..."} 
+                  placeholder={isAnalyzing ? "Комиссия формирует оценку..." : "Ваша реплика..."} 
                   className="w-full bg-slate-900 border border-white/10 rounded-[24px] md:rounded-[28px] p-4 md:p-6 pr-14 md:pr-16 text-white text-sm outline-none resize-none h-16 md:h-18 focus:border-blue-500/50 transition-all placeholder:text-slate-700 disabled:opacity-50" 
               />
               <button 
