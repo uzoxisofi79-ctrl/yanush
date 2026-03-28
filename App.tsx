@@ -6,6 +6,10 @@ import ChatInterface from './components/ChatInterface';
 import AdminPanel from './components/AdminPanel';
 import LoginScreen from './components/Auth/LoginScreen';
 import MuseumView from './components/MuseumView';
+import AboutPage from './components/AboutPage';
+import InstructionPage from './components/InstructionPage';
+import MethodologyPage from './components/MethodologyPage';
+import LegalDocuments from './components/LegalDocuments';
 import SecurityShield from './components/SecurityShield';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { ActiveSession, TeacherProfile, StudentProfile, Message, SessionLog, UserAccount } from './types';
@@ -13,7 +17,7 @@ import { buildDynamicPrompt } from './services/chaosEngine';
 import { getSessionBackup } from './services/storageService';
 import { authService } from './services/authService';
 
-type ViewState = 'landing' | 'setup' | 'chat' | 'admin' | 'auth' | 'museum';
+type ViewState = 'landing' | 'setup' | 'chat' | 'admin' | 'auth' | 'museum' | 'about' | 'instruction' | 'methodology' | 'legal';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<UserAccount | null>(authService.getCurrentUser());
@@ -25,8 +29,6 @@ const App: React.FC = () => {
     if (user) Object.freeze(user);
   }, [user]);
 
-  // Fix: The login process is handled inside the LoginScreen component, which updates localStorage.
-  // This handler simply updates the root application state to reflect the authenticated session.
   const handleLogin = (email: string, role: any = 'USER') => {
       const currentUser = authService.getCurrentUser();
       setUser(currentUser);
@@ -61,13 +63,18 @@ const App: React.FC = () => {
   const renderContent = () => {
     if (view === 'auth') return <LoginScreen onLogin={handleLogin} onEnterMuseum={() => setView('museum')} />;
     if (view === 'museum') return <MuseumView onBack={() => setView('auth')} />;
+    if (view === 'about') return <AboutPage onBack={() => setView('landing')} />;
+    if (view === 'instruction') return <InstructionPage onBack={() => setView('landing')} />;
+    if (view === 'methodology') return <MethodologyPage onBack={() => setView('landing')} />;
+    if (view === 'legal') return <LegalDocuments onBack={() => setView('landing')} />;
     
     return (
       <ErrorBoundary>
         {view === 'landing' && (
           <ScenarioSelector 
               onStart={() => setView('setup')} 
-              onResume={resumeSession} 
+              onResume={resumeSession}
+              onNavigate={(page: string) => setView(page as ViewState)}
           />
         )}
 

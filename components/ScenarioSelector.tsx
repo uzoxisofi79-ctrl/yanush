@@ -1,14 +1,15 @@
 
 import React, { useEffect, useState } from 'react';
-import { Play, RotateCcw, Network, Activity } from 'lucide-react';
+import { Play, RotateCcw, Network, Activity, BookOpen, Info, FileText, Brain } from 'lucide-react';
 import { getSessionBackup } from '../services/storageService';
 
 interface Props {
   onStart: () => void;
   onResume?: () => void;
+  onNavigate?: (page: string) => void;
 }
 
-const ScenarioSelector: React.FC<Props> = ({ onStart, onResume }) => {
+const ScenarioSelector: React.FC<Props> = ({ onStart, onResume, onNavigate }) => {
   const [hasBackup, setHasBackup] = useState(false);
   
   const env: any = (import.meta as any).env || {};
@@ -73,6 +74,23 @@ const ScenarioSelector: React.FC<Props> = ({ onStart, onResume }) => {
             </span>
           </button>
         </div>
+
+        {onNavigate && (
+          <div className="flex flex-wrap justify-center gap-3 pt-4">
+            <button onClick={() => onNavigate('about')} className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-2xl text-[9px] text-slate-500 hover:text-white font-bold uppercase tracking-widest transition-all">
+              <Info size={12} /> О тренажёре
+            </button>
+            <button onClick={() => onNavigate('instruction')} className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-2xl text-[9px] text-slate-500 hover:text-white font-bold uppercase tracking-widest transition-all">
+              <BookOpen size={12} /> Инструкция
+            </button>
+            <button onClick={() => onNavigate('methodology')} className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-2xl text-[9px] text-slate-500 hover:text-white font-bold uppercase tracking-widest transition-all">
+              <Brain size={12} /> Методология
+            </button>
+            <button onClick={() => onNavigate('legal')} className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-2xl text-[9px] text-slate-500 hover:text-white font-bold uppercase tracking-widest transition-all">
+              <FileText size={12} /> Документы
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="absolute bottom-10 text-slate-600 text-[8px] font-black uppercase tracking-[0.5em] flex flex-col items-center gap-3">
