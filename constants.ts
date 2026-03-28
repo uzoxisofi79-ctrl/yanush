@@ -6,9 +6,11 @@ import modulesData from './data/context_modules';
 // --- COMMERCIAL CONFIG ---
 export const COMMERCIAL_CONFIG = {
   PRICE_RUB: 990,
+  ANNUAL_PRICE_RUB: 9000,
+  ANNUAL_MONTHLY_PRICE_RUB: 750,
   SUBSCRIPTION_DAYS: 30,
-  SUPPORT_EMAIL: 'support@janus-trainer.ai',
-  PAYMENT_PROVIDER_URL: 'https://checkout.your-payment-gateway.com' // Сюда вставь ссылку на Stripe/Robokassa
+  SUPPORT_EMAIL: 'support@yanush-sim.ru',
+  PAYMENT_PROVIDER_URL: 'https://checkout.your-payment-gateway.com'
 };
 
 // --- GENERIC TEMPLATE ---

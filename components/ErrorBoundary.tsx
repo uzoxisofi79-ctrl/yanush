@@ -54,9 +54,9 @@ export class ErrorBoundary extends Component<Props, State> {
                 <AlertTriangle size={48} />
               </div>
             </div>
-            <h1 className="text-2xl font-bold text-slate-900 mb-2">Произошел сбой системы</h1>
+            <h1 className="text-2xl font-bold text-slate-900 mb-2">Произошёл сбой</h1>
             <p className="text-slate-500 mb-6">
-              Критическая ошибка при обработке данных симуляции. Мы сохранили все, что могли.
+              Критическая ошибка при обработке данных. Ваша сессия сохранена — попробуйте перезагрузить страницу.
             </p>
             
             <div className="bg-slate-100 p-4 rounded text-left mb-6 overflow-auto max-h-32 text-xs font-mono text-slate-600">
@@ -68,7 +68,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 onClick={() => window.location.reload()}
                 className="px-6 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition flex items-center gap-2"
               >
-                <RefreshCw size={18} /> Перезагрузить страницу
+                <RefreshCw size={18} /> Перезагрузить
               </button>
               
               <button 
@@ -78,11 +78,11 @@ export class ErrorBoundary extends Component<Props, State> {
                 }}
                 className="px-6 py-3 border border-slate-300 text-slate-600 rounded-xl font-bold hover:bg-slate-50 transition flex items-center gap-2"
               >
-                <Home size={18} /> Сброс и Выход
+                <Home size={18} /> Сбросить и выйти
               </button>
             </div>
             <p className="mt-4 text-xs text-slate-400">
-              Нажмите "Перезагрузить", чтобы попробовать восстановить сессию из резервной копии.
+              Нажмите «Перезагрузить», чтобы попробовать восстановить сессию из резервной копии.
             </p>
           </div>
         </div>
