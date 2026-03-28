@@ -50,7 +50,7 @@ const ChatInterface: React.FC<Props> = ({ session, isAdmin, onExit, initialMessa
 
   const toggleListening = () => {
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      if (!SpeechRecognition) return alert('Голосовой ввод не поддерживается');
+      if (!SpeechRecognition) return alert('Голосовой ввод не поддерживается вашим браузером');
       if (!recognitionRef.current) {
           recognitionRef.current = new SpeechRecognition();
           recognitionRef.current.lang = 'ru-RU';
@@ -158,6 +158,24 @@ const ChatInterface: React.FC<Props> = ({ session, isAdmin, onExit, initialMessa
                           ))}
                         </div>
                       </div>
+
+                      {analysis.advisory_commission && analysis.advisory_commission.length > 0 && (
+                        <div>
+                          <h3 className="text-[10px] font-black text-amber-500 uppercase tracking-[0.4em] mb-2 ml-2">Совещательная комиссия</h3>
+                          <p className="text-[9px] text-slate-600 ml-2 mb-6 italic">Мнения не влияют на итоговую оценку</p>
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {analysis.advisory_commission.map((member, i) => (
+                                <div key={i} className="glass p-6 rounded-[30px] border-amber-500/10 space-y-3">
+                                    <div>
+                                        <span className="text-amber-400 font-black text-xs uppercase italic">{member.name}</span>
+                                        <span className="text-[8px] text-slate-600 font-black uppercase tracking-widest block">{member.role}</span>
+                                    </div>
+                                    <p className="text-[11px] text-slate-400 italic">«{member.verdict}»</p>
+                                </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                   </div>
               </div>
               <footer className="shrink-0 p-8 glass flex gap-4 print:hidden bg-slate-950/90 backdrop-blur-xl border-t border-white/5">

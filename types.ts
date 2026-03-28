@@ -80,7 +80,14 @@ export interface AnalysisResult {
   overall_score: number;
   summary: string;
   commission: CommissionFeedback[];
+  advisory_commission?: AdvisoryFeedback[];
   timestamp: number;
+}
+
+export interface AdvisoryFeedback {
+  role: string;
+  name: string;
+  verdict: string;
 }
 
 export interface TerminationThresholds {
