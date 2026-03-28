@@ -283,7 +283,7 @@ const ChatInterface: React.FC<Props> = ({ session, isAdmin, onExit, initialMessa
                         <Zap size={16} className="text-amber-500" />
                         <span className="text-[10px] font-black uppercase tracking-widest text-amber-500">Подсказка</span>
                     </div>
-                    <p className="text-sm text-amber-200 italic font-medium leading-relaxed">"{ghostAdvice}"</p>
+                    <p className="text-sm text-amber-200 italic font-medium leading-relaxed">«{ghostAdvice}»</p>
                 </div>
             )}
           </div>

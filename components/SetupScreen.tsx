@@ -45,10 +45,13 @@ const SetupScreen: React.FC<Props> = ({ onStart, onOpenAdmin, onBack }) => {
       window.location.reload(); 
   };
 
+  const [promoError, setPromoError] = useState('');
+
   const applyPromo = () => {
-    if (promoCode.trim().length > 0) {
-      setPromoApplied(true);
-    }
+    if (promoCode.trim().length === 0) return;
+    // В текущей версии промокоды проверяются на стороне платёжного шлюза
+    setPromoApplied(true);
+    setPromoError('');
   };
 
   const currentPrice = selectedPlan === 'annual' ? COMMERCIAL_CONFIG.ANNUAL_PRICE_RUB : COMMERCIAL_CONFIG.PRICE_RUB;

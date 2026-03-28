@@ -239,7 +239,7 @@ const MuseumView: React.FC<Props> = ({ onBack }) => {
             <main className="flex-1 overflow-y-auto p-8 relative z-10 no-scrollbar">
                 <div className="mb-12">
                     <h2 className="text-xs font-black text-slate-500 uppercase tracking-[0.5em] mb-2">Акцентуации характера подростков</h2>
-                    <p className="text-sm text-slate-600 leading-relaxed max-w-2xl mb-4">Каждая карточка — отдельный психотип с описанием, типичной цитатой и рекомендациями для педагога. В полной версии доступны демо-сессии.</p>
+                    <p className="text-sm text-slate-600 leading-relaxed max-w-2xl mb-4">Каждая карточка — отдельный психотип с описанием, типичной цитатой и рекомендациями для педагога.</p>
                     <div className="h-px w-full bg-gradient-to-r from-blue-500/50 to-transparent"></div>
                 </div>
 
