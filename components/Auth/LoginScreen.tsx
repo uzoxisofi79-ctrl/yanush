@@ -1,10 +1,10 @@
 
 import React, { useState } from 'react';
-import { Mail, Lock, ArrowRight, ShieldAlert, Fingerprint, Activity, BookOpen, UserPlus, LogIn, ChevronLeft, Loader2 } from 'lucide-react';
+import { Mail, Lock, ArrowRight, Fingerprint, Activity, UserPlus, LogIn, ChevronLeft, Loader2 } from 'lucide-react';
 import { authService } from '../../services/authService';
 
 interface Props {
-  onLogin: (email: string, role: any) => void;
+  onLogin: () => void;
   onEnterMuseum: () => void;
 }
 
@@ -23,8 +23,8 @@ const LoginScreen: React.FC<Props> = ({ onLogin, onEnterMuseum }) => {
     try {
         if (mode === 'admin') {
             if (password === '4308') {
-                const admin = authService.admin_login('admin@kernel.root');
-                onLogin(admin.email, admin.role);
+                authService.admin_login('admin@kernel.root');
+                onLogin();
             } else {
                 setError('КЛЮЧ ОТКЛОНЕН');
             }
@@ -42,7 +42,7 @@ const LoginScreen: React.FC<Props> = ({ onLogin, onEnterMuseum }) => {
         } else if (mode === 'login') {
             const user = await authService.login(email, password);
             if (user) {
-                onLogin(user.email, user.role);
+                onLogin();
             } else {
                 setError('НЕВЕРНЫЙ ЛОГИН ИЛИ ПАРОЛЬ');
             }

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { ShieldAlert, ArrowLeft, Database, Terminal, Cpu, Lock, Layers, AlertTriangle, Plus, X, Save, Trash2, Activity, Activity as ActivityIcon, Info, Sliders, Target } from 'lucide-react';
+import { ShieldAlert, ArrowLeft, Terminal, Layers, AlertTriangle, Activity as ActivityIcon } from 'lucide-react';
 import { getSessionHistory } from '../services/logService';
 import { SessionLog, ContextModule } from '../types';
 import { DEFAULT_ACCENTUATIONS, DEFAULT_CONTEXT_MODULES } from '../constants';

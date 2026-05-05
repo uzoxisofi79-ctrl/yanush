@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { ArrowLeft, Target, Zap, ShieldAlert, User, Info, Sparkles, Activity } from 'lucide-react';
+import { ArrowLeft, Target, Zap, ShieldAlert, User, Sparkles, Activity } from 'lucide-react';
 
 interface Exhibit {
     id: string;

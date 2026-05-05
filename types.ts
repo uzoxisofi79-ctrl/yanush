@@ -11,7 +11,6 @@ export interface UserAccount {
   id: string;
   email: string;
   role: UserRole;
-  password?: string; // Только для локальной БД
   subscriptionActiveUntil?: number;
 }
 
@@ -64,11 +63,6 @@ export interface ContextModule {
   isPremium?: boolean;
 }
 
-export interface GlobalSettings {
-  chat_temperature: number;
-  analysis_temperature: number;
-}
-
 export interface CommissionFeedback {
   role: string;
   name: string;
@@ -118,9 +112,4 @@ export interface SessionLog {
   sessionSnapshot?: ActiveSession; 
 }
 
-export interface Scenario {
-  id: string;
-  base_system_prompt: string;
-}
 
-export type SessionStatus = 'active' | 'completed' | 'manual' | 'interrupted';
