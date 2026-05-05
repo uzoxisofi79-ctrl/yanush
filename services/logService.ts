@@ -51,7 +51,6 @@ export const saveSessionLog = (log: SessionLog): void => {
 
     try {
         trySave(optimizedHistory);
-        console.log("Optimized storage: Stripped old snapshots.");
     } catch (e2) {
         // Strategy 2: Strip 'sessionSnapshot' from ALL logs except the very latest one.
         optimizedHistory = history.map((item, index) => {
@@ -62,7 +61,6 @@ export const saveSessionLog = (log: SessionLog): void => {
 
         try {
              trySave(optimizedHistory);
-             console.log("Optimized storage: Kept only latest snapshot.");
         } catch (e3) {
             // Strategy 3: Hard Trim of count.
             // If we still can't save, we must reduce the number of items.
@@ -70,7 +68,6 @@ export const saveSessionLog = (log: SessionLog): void => {
             const hardTrimmed = optimizedHistory.slice(0, 20);
              try {
                  trySave(hardTrimmed);
-                 console.log("Optimized storage: Hard trim to 20 items.");
              } catch (e4) {
                  // Strategy 4: Nuclear option - Keep only last 5 items (lightweight).
                  trySave(hardTrimmed.slice(0, 5));

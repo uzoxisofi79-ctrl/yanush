@@ -22,21 +22,11 @@ const SecurityShield: React.FC<{ children: React.ReactNode }> = ({ children }) =
       }
     };
 
-    // Constant console clearing
-    const scrubber = setInterval(() => {
-      // This is a common trick to discourage console usage
-      if (window.console && window.console.clear) {
-        // Only clear if not in a designated debug mode (which we don't have)
-        // console.clear(); 
-      }
-    }, 1000);
-
-    // Override console.log to prevent leakage
     const originalLog = console.log;
     const originalWarn = console.warn;
     const originalError = console.error;
 
-    if (process.env.NODE_ENV === 'production') {
+    if (import.meta.env.PROD) {
         console.log = () => {};
         console.warn = () => {};
         console.info = () => {};
@@ -48,7 +38,6 @@ const SecurityShield: React.FC<{ children: React.ReactNode }> = ({ children }) =
     return () => {
       document.removeEventListener('contextmenu', handleContextMenu);
       document.removeEventListener('keydown', handleKeyDown);
-      clearInterval(scrubber);
       console.log = originalLog;
       console.warn = originalWarn;
       console.error = originalError;

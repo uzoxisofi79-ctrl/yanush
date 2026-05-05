@@ -13,18 +13,11 @@ interface State {
 }
 
 /**
- * ErrorBoundary component to catch and handle runtime errors in the simulation.
- * Fixed: Explicitly declare 'state' and 'props' properties inside the class to ensure they are correctly 
- * recognized by the TypeScript compiler when extending the generic Component class.
+ * ErrorBoundary catches runtime errors in the component tree and renders a recovery UI.
  */
 export class ErrorBoundary extends Component<Props, State> {
-  // Fix: Explicitly declare properties to satisfy TypeScript inheritance visibility checks
-  public state: State;
-  public props: Props;
-
   constructor(props: Props) {
     super(props);
-    // Initializing state in constructor; declared above to fix line 19 error
     this.state = {
       hasError: false,
       error: null
@@ -35,13 +28,11 @@ export class ErrorBoundary extends Component<Props, State> {
     return { hasError: true, error };
   }
 
-  // Handle errors caught in the component tree
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('Uncaught error:', error, errorInfo);
   }
 
   render() {
-    // Access state and props via 'this' to leverage type safety; fixed errors on lines 36 and 37
     const { hasError, error } = this.state;
     const { children } = this.props;
 

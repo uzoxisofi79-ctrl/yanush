@@ -3,7 +3,7 @@ import { Message, MessageRole, ActiveSession, AnalysisResult } from '../types';
 import { sendMessageToGemini, analyzeChatSession, generateGhostResponse } from '../services/geminiService';
 import { saveSessionBackup } from '../services/storageService';
 import { resolveGenderTokens } from '../services/chaosEngine';
-import { Send, Activity as ScannerIcon, Zap, ShieldAlert, Cpu, Info, X, Target, Award, Mic, MicOff, Download, Printer, Loader2, Gavel } from 'lucide-react';
+import { Send, Zap, ShieldAlert, Info, Mic, MicOff, Loader2, Gavel } from 'lucide-react';
 
 interface Props {
   session: ActiveSession;
@@ -100,7 +100,7 @@ const ChatInterface: React.FC<Props> = ({ session, isAdmin, onExit, initialMessa
     setGhostAdvice(null);
 
     try {
-      const response = await sendMessageToGemini(newMessages, session.constructedPrompt, text);
+      const response = await sendMessageToGemini(newMessages, session.constructedPrompt);
       const modelMsg: Message = {
         id: (Date.now() + 2).toString(),
         role: MessageRole.MODEL,

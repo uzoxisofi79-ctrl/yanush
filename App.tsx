@@ -25,11 +25,10 @@ const App: React.FC = () => {
     if (user) Object.freeze(user);
   }, [user]);
 
-  // Fix: The login process is handled inside the LoginScreen component, which updates localStorage.
+  // The login process is handled inside the LoginScreen component, which updates localStorage.
   // This handler simply updates the root application state to reflect the authenticated session.
-  const handleLogin = (email: string, role: any = 'USER') => {
-      const currentUser = authService.getCurrentUser();
-      setUser(currentUser);
+  const handleLogin = () => {
+      setUser(authService.getCurrentUser());
       setView('landing');
   };
 

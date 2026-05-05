@@ -1,4 +1,4 @@
-import { TeacherProfile, StudentProfile, Accentuation, ContextModule, ActiveSession } from '../types';
+import { TeacherProfile, StudentProfile, ActiveSession } from '../types';
 import { DEFAULT_ACCENTUATIONS, DEFAULT_CONTEXT_MODULES } from '../constants';
 import { ACCESS_LIMITS } from './authService';
 

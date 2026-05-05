@@ -1,4 +1,3 @@
-// services/geminiService.ts
 import { Message, MessageRole, AnalysisResult } from "../types";
 
 type GeminiChatResponse = {
@@ -63,8 +62,7 @@ function buildContentsFromMessages(messages: Message[]) {
  */
 export async function sendMessageToGemini(
   messages: Message[],
-  constructedPrompt: string,
-  _userText: string
+  constructedPrompt: string
 ): Promise<GeminiChatResponse> {
   const instruction = `
 Отвечай ТОЛЬКО СТРОГИМ JSON (без \`\`\`).
